@@ -1,0 +1,91 @@
+FROM debian
+
+RUN DEBIAN_FRONTEND=noninteractive
+
+RUN apt update
+RUN apt install -y --no-install-recommends openssl
+
+ARG password=toto
+ARG ca_certid="ac_mmi"
+ARG lan_certid="lan_mmi"
+
+# on va auto certifier un serveur mmi.iutnc.fr que l'on déclare dans /etc/host en 127.0.0.1
+WORKDIR /root/.ssl
+
+COPY <<EOF "${ca_certid}.conf"
+[ req ]
+prompt                  = no
+default_bits            = 2048
+default_md              = sha256
+distinguished_name      = req_distinguished_name
+
+[ req_distinguished_name ]
+countryName             = FR
+stateOrProvinceName     = Meurthe et Moselle
+localityName            = Nancy
+organizationName        = IUT Nancy-Charlemagne
+organizationalUnitName  = MMI
+commonName              = mmi.iutnc.fr
+emailAddress            = MMI@univ-lorraine.fr
+EOF
+
+# https://www.linuxtricks.fr/wiki/openssl-creation-de-certificats-et-ca-autosignes
+
+# Autorité de confiance
+# Création d'une clé privée pour l'autorité de confiance
+RUN echo "$password\n$password\n" | openssl genrsa -des3 -out "${ca_certid}.key" 2048
+# Création du certificat de notre autorité de confiance (au format PEM)
+RUN printf "%b" "${password}\n" | openssl req -x509 -new -nodes -sha256 -days 10000 -key "${ca_certid}.key" -out "${ca_certid}.pem" -config "${ca_certid}.conf"
+# préparation du format crt si besoin
+RUN openssl x509 -in "${ca_certid}.pem" -inform PEM -out "${ca_certid}.crt"
+
+# Certification de notre site
+COPY <<EOF "${lan_certid}.conf"
+[ req ]
+prompt                  = no
+default_bits            = 2048
+default_md              = sha256
+distinguished_name      = req_distinguished_name
+
+[ req_distinguished_name ]
+countryName             = FR
+stateOrProvinceName     = Meurthe et Moselle
+localityName            = Nancy
+organizationName        = IUT Nancy-Charlemagne
+organizationalUnitName  = MMI
+commonName              = mmi.iutnc.fr
+emailAddress            = MMI@univ-lorraine.fr
+EOF
+
+# Création de notre clé privée
+RUN openssl genrsa -out "${lan_certid}.key" 2048
+# Demande de certificat - Certificate Signing Request (CSR)
+RUN openssl req -new -key "${lan_certid}.key" -out "${lan_certid}.csr" -config "${lan_certid}.conf"
+# Certificat Auto signé (sans autorité de confiance)
+RUN openssl x509 -req -days 10000 -in "${lan_certid}.csr" -signkey "${lan_certid}.key" -out "${lan_certid}.as.crt"
+
+COPY <<EOF "${lan_certid}.ext"
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = esx1.linuxtricks.lan
+EOF
+
+# Certification par l'autorité
+RUN printf "%b" "${password}\n" | openssl x509 -req -days 10000 -sha256 -in "${lan_certid}.csr" -CA "${ca_certid}.pem" -CAkey "${ca_certid}.key" -CAcreateserial -out "${lan_certid}.ac.crt" -extfile "${lan_certid}.ext"
+
+# Config Apache
+COPY <<EOF 00_default_ssl_vhost.conf
+ServerName mmi.iutnc.fr
+SSLCertificateFile /etc/ssl/"${lan_certid}.ac.crt"
+SSLCertificateKeyFile /etc/ssl/"${lan_certid}.key"
+EOF
+
+# Config Nginx
+COPY <<EOF ssl.conf
+ssl                  on;
+ssl_certificate      /etc/ssl/"${lan_certid}.ac.crt";
+ssl_certificate_key  /etc/ssl/"${lan_certid}.key";
+EOF

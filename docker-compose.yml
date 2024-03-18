@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+
+  serv_php:
+    build:
+      context: .
+      dockerfile: ./Dockerfiles/phpintl.docker
+    container_name: php
+    # ports:
+    #   - 8080:80
+    volumes:
+      - ./src:/var/www/html
+  
+  apache:
+    image: httpd
+    ports:
+      - 8085:80
+      - 8087:443
+    volumes:
+      - ./Dockerfiles/confApache2/httpd.conf:/usr/local/apache2/conf/httpd.conf
+      - ./Dockerfiles/confApache2/httpd-ssl.conf:/usr/local/apache2/conf/extra/httpd-ssl.conf
+      - ./Dockerfiles/confNginx/lan_mmi.as.crt:/usr/local/apache2/conf/lan_mmi.as.crt
+      - ./Dockerfiles/confNginx/lan_mmi.key:/usr/local/apache2/conf/lan_mmi.key
+
+  nginx:
+    image: nginx
+    ports:
+      - 8086:80
+      - 8088:443
+    volumes:
+      - ./Dockerfiles/confNginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./Dockerfiles/confNginx/lan_mmi.as.crt:/etc/nginx/conf.d/lan_mmi.as.crt
+      - ./Dockerfiles/confNginx/lan_mmi.key:/etc/nginx/conf.d/lan_mmi.key
+
+  db:
+    image: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=azerty
+    volumes:
+      - data:/var/lib/mysql
+    networks:
+      - data
+
+  phpmyadmin:
+    image: phpmyadmin
+    ports:
+      - 8081:80
+    networks:
+      - data
+
+  adminer:
+    image: adminer
+    ports:
+      - 8082:8080
+    networks:
+      - data
+
+volumes:
+  data:
+
+  
+networks:
+  data:
+    driver: bridge

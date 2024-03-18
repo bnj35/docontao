@@ -1,0 +1,12 @@
+ARG version=8-fpm
+ARG userEmail
+ARG userName
+ARG safeDirectory=*
+
+FROM php:$version
+
+RUN DEBIAN_FRONTEND=noninteractive
+RUN apt update -y && apt install -y --no-install-recommends git ca-certificates
+RUN git config --global user.email=$userEmail
+RUN git config --global user.name=$userName
+RUN git config --global --add safe.directory $safeDirectory

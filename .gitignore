@@ -1,0 +1,4 @@
+.env
+.DS_Store
+Dockerfiles/confNginx/lan_mmi.as.crt
+Dockerfiles/confNginx/lan_mmi.key

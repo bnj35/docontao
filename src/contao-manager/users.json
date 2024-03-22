@@ -1,10 +1,10 @@
 {
-    "secret": "2fe051275b4f88d304b5d2c349bf7ca0da2c02c8610f8ceec787bcfda3f119a7423440e7c270df86",
+    "secret": "86e326e350ca649aabc46dc403523d7155122d2555012918d3bb1254be76f8ba81527b16cf27b7da",
     "version": 2,
     "users": {
         "admin": {
             "username": "admin",
-            "password": "$2y$13$BGVNG9QZc.J3t5B\/Ma2Xdu2.PJWINqmIGnWD\/wmUCpFAb5BPeDfzK"
+            "password": "$2y$13$gXAfcfoAtBsCuf6O8RBw.uwd5xwOWK4qNob7xv15PcNrnhUVGaJyO"
         }
     }
 }

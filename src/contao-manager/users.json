@@ -1,0 +1,10 @@
+{
+    "users": {
+        "admin": {
+            "username": "admin",
+            "password": "$2y$13$cDFDmL0exN6L4DEfOBRlDOS7s5eFOVGmk7.2nVz3.pzSgZ\/mc.A8."
+        }
+    },
+    "version": 2,
+    "secret": "06da3c08ca31510eb9c369c4f86d969aa3d9413a87c0be2129e3ad283a1311ef5ea30ff5e5f9819b"
+}
